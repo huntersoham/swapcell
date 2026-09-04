@@ -1,4 +1,8 @@
 node_modules/
 dist/
 .env
-server/quotes.json
+server/data/db.json
+server/uploads/avatars/*
+server/uploads/phones/*
+!server/uploads/avatars/.gitkeep
+!server/uploads/phones/.gitkeep

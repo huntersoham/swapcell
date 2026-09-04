@@ -2,36 +2,37 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const { readDB, writeDB } = require("./db");
+
+const authRoutes = require("./routes/auth");
+const profileRoutes = require("./routes/profile");
+const phoneRoutes = require("./routes/phones");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const QUOTES_FILE = path.join(__dirname, "quotes.json");
 
 app.use(cors());
 app.use(express.json());
 
-function readQuotes() {
-  if (!fs.existsSync(QUOTES_FILE)) return [];
-  return JSON.parse(fs.readFileSync(QUOTES_FILE, "utf-8"));
-}
+// Serve uploaded avatars / phone photos
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-function writeQuotes(quotes) {
-  fs.writeFileSync(QUOTES_FILE, JSON.stringify(quotes, null, 2));
-}
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/phones", phoneRoutes);
 
-// Health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Submit a quote request from the landing page form
+// Landing page "Get Quote" lead form (kept from original marketing page)
 app.post("/api/quote", (req, res) => {
   const { name, phone, brand, model } = req.body;
-
   if (!name || !phone || !brand || !model) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
+  const db = readDB();
   const quote = {
     id: Date.now(),
     name,
@@ -40,10 +41,8 @@ app.post("/api/quote", (req, res) => {
     model,
     createdAt: new Date().toISOString(),
   };
-
-  const quotes = readQuotes();
-  quotes.push(quote);
-  writeQuotes(quotes);
+  db.quotes.push(quote);
+  writeDB(db);
 
   res.status(201).json({
     message: "Quote request received! Our team will contact you shortly.",
@@ -51,9 +50,17 @@ app.post("/api/quote", (req, res) => {
   });
 });
 
-// List all submitted quote requests (simple admin view)
 app.get("/api/quotes", (req, res) => {
-  res.json(readQuotes());
+  const db = readDB();
+  res.json(db.quotes);
+});
+
+// Multer / generic error handler
+app.use((err, req, res, next) => {
+  if (err) {
+    return res.status(400).json({ error: err.message || "Something went wrong." });
+  }
+  next();
 });
 
 app.listen(PORT, () => {
