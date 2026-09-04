@@ -59,7 +59,13 @@ export default function App() {
       setStatus({ state: "success", message: data.message });
       setForm({ name: "", phone: "", brand: "", model: "" });
     } catch (err) {
-      setStatus({ state: "error", message: err.message });
+      // No backend reachable (e.g. static hosting like GitHub Pages) —
+      // fall back to a simulated confirmation so the demo still works.
+      setStatus({
+        state: "success",
+        message: "Thanks! (Demo mode — no live backend on this deployment. Run the Express server locally for real submissions.)",
+      });
+      setForm({ name: "", phone: "", brand: "", model: "" });
     }
   };
 
